@@ -4,13 +4,8 @@
   "description": "A modern web application for parsing addresses from RTF files",
   "main": "address_parser.html",
   "scripts": {
-    "start": "nixpax serve",
-    "dev": "nixpax dev",
-    "build": "nixpax build",
-    "deploy": "nixpax deploy",
+    "build": "bash deploy.sh",
     "serve": "python3 -m http.server 8000",
-    "serve-alt": "npx http-server -p 8000 -o",
-    "build:unix": "bash deploy.sh",
     "serve:dist": "cd dist && python3 -m http.server 8000"
   },
   "keywords": [
@@ -20,7 +15,6 @@
     "html",
     "javascript",
     "static",
-    "nixpax",
     "coolify"
   ],
   "author": "",
@@ -40,7 +34,6 @@
     "address_parser.html",
     "README.md",
     ".gitignore",
-    "nixpax.toml",
     "deploy.sh"
   ]
 } 
