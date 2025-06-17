@@ -1,0 +1,46 @@
+{
+  "name": "address-parser",
+  "version": "1.0.0",
+  "description": "A modern web application for parsing addresses from RTF files",
+  "main": "address_parser.html",
+  "scripts": {
+    "start": "nixpax serve",
+    "dev": "nixpax dev",
+    "build": "nixpax build",
+    "deploy": "nixpax deploy",
+    "serve": "python3 -m http.server 8000",
+    "serve-alt": "npx http-server -p 8000 -o",
+    "build:unix": "bash deploy.sh",
+    "serve:dist": "cd dist && python3 -m http.server 8000"
+  },
+  "keywords": [
+    "address",
+    "parser",
+    "rtf",
+    "html",
+    "javascript",
+    "static",
+    "nixpax",
+    "coolify"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "."
+  },
+  "homepage": ".",
+  "files": [
+    "address_parser.html",
+    "README.md",
+    ".gitignore",
+    "nixpax.toml",
+    "deploy.sh"
+  ]
+} 
