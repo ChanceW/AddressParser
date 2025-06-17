@@ -314,86 +314,35 @@
         }
 
         function extractAddressesFromRTF(rtfContent) {
-            console.log('Starting RTF parsing...');
-            
-            // Simple RTF cleaning - just remove RTF commands but keep content
+            // Remove RTF commands but keep line breaks
             let cleanedContent = rtfContent
-                .replace(/\\[a-z]+\d*\s?/g, ' ') // Remove RTF commands
+                .replace(/\\par[d]?/gi, '\n') // Convert RTF paragraph to newline
+                .replace(/\\[a-z]+[0-9]* ?/gi, '') // Remove other RTF commands
+                .replace(/[{}]/g, '') // Remove braces
                 .replace(/\\'/g, "'") // Handle escaped apostrophes
-                .replace(/\\"/g, '"') // Handle escaped quotes
-                .replace(/\\\s/g, ' ') // Handle escaped spaces
-                .replace(/\s+/g, ' ') // Normalize whitespace
+                .replace(/\"/g, '"') // Handle escaped quotes
+                .replace(/\r/g, '') // Remove carriage returns
                 .trim();
 
-            console.log('Cleaned content length:', cleanedContent.length);
-            console.log('First 1000 chars:', cleanedContent.substring(0, 1000));
-
-            // Extract all text content from braces
-            const textMatches = cleanedContent.match(/\{([^}]+)\}/g);
-            console.log('Text matches found:', textMatches ? textMatches.length : 0);
-            
-            if (textMatches) {
-                console.log('First 10 text matches:', textMatches.slice(0, 10));
-            }
-
+            const lines = cleanedContent.split('\n').map(line => line.trim()).filter(line => line.length > 0);
             const addresses = [];
 
-            // Process each text block
-            if (textMatches) {
-                for (let match of textMatches) {
-                    // Remove the braces
-                    let text = match.replace(/[{}]/g, '').trim();
-                    
-                    if (text.length > 10) { // Only process substantial text blocks
-                        console.log('Processing text block:', text);
-                        
-                        // Look for address patterns in this text block
-                        const addressMatch = text.match(/(\d+\s+[A-Za-z\s]+(?:Dr|Ln|Ct|Ave|St|Blvd|Way|Pl|Rd|Suite|Ste|Po Box|Parl|Park|Drive|Lane|Court|Street|Avenue|Boulevard|Point|Pointe))\s+([A-Za-z\s]+,\s*[A-Z]{2}\s+\d{5}(?:-\d{4})?)/gi);
-                        
-                        if (addressMatch) {
-                            for (let addr of addressMatch) {
-                                const parts = addr.match(/^(\d+\s+[A-Za-z\s]+(?:Dr|Ln|Ct|Ave|St|Blvd|Way|Pl|Rd|Suite|Ste|Po Box|Parl|Park|Drive|Lane|Court|Street|Avenue|Boulevard|Point|Pointe))\s+([A-Za-z\s]+,\s*[A-Z]{2}\s+\d{5}(?:-\d{4})?)/i);
-                                if (parts) {
-                                    const street = parts[1].trim();
-                                    const cityStateZip = parts[2].trim();
-                                    
-                                    // Parse city, state, and zip
-                                    const cityStateZipMatch = cityStateZip.match(/^([A-Za-z\s]+),\s*([A-Z]{2})\s+(\d{5}(?:-\d{4})?)$/);
-                                    
-                                    if (cityStateZipMatch) {
-                                        const city = cityStateZipMatch[1].trim();
-                                        const state = cityStateZipMatch[2].trim();
-                                        const zip = cityStateZipMatch[3].trim();
-                                        
-                                        console.log('Found address:', street, '->', city, state, zip);
-                                        addresses.push({
-                                            address: street,
-                                            city: city,
-                                            state: state,
-                                            zip: zip
-                                        });
-                                    } else {
-                                        // Fallback: keep original format
-                                        console.log('Found address (fallback):', street, '->', cityStateZip);
-                                        addresses.push({
-                                            address: street,
-                                            city: cityStateZip,
-                                            state: '',
-                                            zip: ''
-                                        });
-                                    }
-                                }
-                            }
-                        }
+            for (let i = 0; i < lines.length - 1; i++) {
+                // Street address: starts with a number
+                if (/^\d+\s+/.test(lines[i])) {
+                    // City, State ZIP: e.g. Canton, GA 30114
+                    const cityStateZipMatch = lines[i + 1].match(/^([A-Za-z\s]+),\s*([A-Z]{2})\s+(\d{5}(?:-\d{4})?)$/);
+                    if (cityStateZipMatch) {
+                        addresses.push({
+                            address: lines[i],
+                            city: cityStateZipMatch[1].trim(),
+                            state: cityStateZipMatch[2].trim(),
+                            zip: cityStateZipMatch[3].trim()
+                        });
+                        i++; // Skip next line since it's part of this address
                     }
                 }
             }
-
-            console.log('Final addresses found:', addresses.length);
-            if (addresses.length > 0) {
-                console.log('Sample addresses:', addresses.slice(0, 3));
-            }
-            
             return addresses;
         }
 
