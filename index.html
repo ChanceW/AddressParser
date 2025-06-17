@@ -241,6 +241,7 @@
                 <input type="file" id="rtfFile" accept=".rtf" />
                 <button class="btn" id="parseBtn" onclick="parseRTF()">Parse Addresses</button>
                 <button class="btn" id="testBtn" onclick="testRTF()" style="background: #28a745;">Test RTF</button>
+                <button class="btn" id="downloadBtn" onclick="downloadCSV()" style="background: #17a2b8; display: none;">Download CSV</button>
             </div>
             <div class="stats" id="stats" style="display: none;">
                 <div class="stat-item">
@@ -291,6 +292,10 @@
                     const rtfContent = e.target.result;
                     console.log('Raw RTF content length:', rtfContent.length); // Debug
                     const addresses = extractAddressesFromRTF(rtfContent);
+                    
+                    // Store addresses globally for download
+                    window.parsedAddresses = addresses;
+                    
                     displayAddresses(addresses);
                     updateStats(addresses);
                 } catch (error) {
@@ -350,13 +355,33 @@
                                 const parts = addr.match(/^(\d+\s+[A-Za-z\s]+(?:Dr|Ln|Ct|Ave|St|Blvd|Way|Pl|Rd|Suite|Ste|Po Box|Parl|Park|Drive|Lane|Court|Street|Avenue|Boulevard|Point|Pointe))\s+([A-Za-z\s]+,\s*[A-Z]{2}\s+\d{5}(?:-\d{4})?)/i);
                                 if (parts) {
                                     const street = parts[1].trim();
-                                    const city = parts[2].trim();
+                                    const cityStateZip = parts[2].trim();
                                     
-                                    console.log('Found address:', street, '->', city);
-                                    addresses.push({
-                                        street: street,
-                                        city: city
-                                    });
+                                    // Parse city, state, and zip
+                                    const cityStateZipMatch = cityStateZip.match(/^([A-Za-z\s]+),\s*([A-Z]{2})\s+(\d{5}(?:-\d{4})?)$/);
+                                    
+                                    if (cityStateZipMatch) {
+                                        const city = cityStateZipMatch[1].trim();
+                                        const state = cityStateZipMatch[2].trim();
+                                        const zip = cityStateZipMatch[3].trim();
+                                        
+                                        console.log('Found address:', street, '->', city, state, zip);
+                                        addresses.push({
+                                            address: street,
+                                            city: city,
+                                            state: state,
+                                            zip: zip
+                                        });
+                                    } else {
+                                        // Fallback: keep original format
+                                        console.log('Found address (fallback):', street, '->', cityStateZip);
+                                        addresses.push({
+                                            address: street,
+                                            city: cityStateZip,
+                                            state: '',
+                                            zip: ''
+                                        });
+                                    }
                                 }
                             }
                         }
@@ -383,10 +408,13 @@
             container.innerHTML = addresses.map((address, index) => `
                 <div class="address-card">
                     <div class="address-number">${index + 1}</div>
-                    <div class="street-address">${address.street}</div>
-                    <div class="city-state-zip">${address.city}</div>
+                    <div class="street-address">${address.address}</div>
+                    <div class="city-state-zip">${address.city}, ${address.state} ${address.zip}</div>
                 </div>
             `).join('');
+            
+            // Show download button when addresses are displayed
+            document.getElementById('downloadBtn').style.display = 'inline-block';
         }
 
         function updateStats(addresses) {
@@ -395,14 +423,10 @@
 
             addresses.forEach(address => {
                 if (address.city) {
-                    const cityState = address.city.split(',');
-                    if (cityState.length >= 2) {
-                        cities.add(cityState[0].trim());
-                        const stateZip = cityState[1].trim().split(' ');
-                        if (stateZip.length >= 1) {
-                            states.add(stateZip[0]);
-                        }
-                    }
+                    cities.add(address.city.trim());
+                }
+                if (address.state) {
+                    states.add(address.state.trim());
                 }
             });
 
@@ -474,6 +498,50 @@
                 alert('Check the browser console (F12) for RTF content analysis');
             };
             reader.readAsText(file);
+        }
+
+        function downloadCSV() {
+            const addresses = window.parsedAddresses; // Store addresses globally for download
+            
+            if (!addresses || addresses.length === 0) {
+                showError('No addresses to download. Please parse an RTF file first.');
+                return;
+            }
+
+            // Create CSV content
+            const csvContent = [
+                'Address,City,State,Zip', // Header
+                ...addresses.map(addr => {
+                    // Escape quotes and wrap in quotes if contains comma
+                    const escapeCSV = (str) => {
+                        if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+                            return '"' + str.replace(/"/g, '""') + '"';
+                        }
+                        return str;
+                    };
+                    
+                    return [
+                        escapeCSV(addr.address || ''),
+                        escapeCSV(addr.city || ''),
+                        escapeCSV(addr.state || ''),
+                        escapeCSV(addr.zip || '')
+                    ].join(',');
+                })
+            ].join('\n');
+
+            // Create and download file
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            
+            if (link.download !== undefined) {
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', 'parsed_addresses.csv');
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
         }
 
         // Auto-parse if the demo RTF file is available
