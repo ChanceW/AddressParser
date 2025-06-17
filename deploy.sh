@@ -24,7 +24,6 @@ echo "📋 Copying files to deployment directory..."
 cp address_parser.html "$DEPLOY_DIR/"
 cp README.md "$DEPLOY_DIR/"
 cp .gitignore "$DEPLOY_DIR/"
-cp nixpax.toml "$DEPLOY_DIR/"
 cp package.json "$DEPLOY_DIR/"
 
 # Create a simple index.html redirect if needed
@@ -65,7 +64,6 @@ Files Deployed:
 - README.md
 - index.html (redirect)
 - package.json
-- nixpax.toml
 
 Total Size: $(du -sh "$DEPLOY_DIR" | cut -f1)
 EOF
