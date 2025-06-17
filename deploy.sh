@@ -8,8 +8,8 @@ set -e
 echo "🚀 Starting Address Parser deployment for Coolify..."
 
 # Check if we're in the right directory
-if [ ! -f "address_parser.html" ]; then
-    echo "❌ Error: address_parser.html not found in current directory"
+if [ ! -f "index.html" ]; then
+    echo "❌ Error: index.html not found in current directory"
     exit 1
 fi
 
@@ -21,7 +21,7 @@ mkdir -p "$DEPLOY_DIR"
 
 # Copy files to deployment directory
 echo "📋 Copying files to deployment directory..."
-cp address_parser.html "$DEPLOY_DIR/"
+cp index.html "$DEPLOY_DIR/"
 cp README.md "$DEPLOY_DIR/"
 cp .gitignore "$DEPLOY_DIR/"
 cp package.json "$DEPLOY_DIR/"
@@ -36,10 +36,10 @@ if [ ! -f "$DEPLOY_DIR/index.html" ]; then
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Address Parser</title>
-    <meta http-equiv="refresh" content="0; url=address_parser.html">
+    <meta http-equiv="refresh" content="0; url=index.html">
 </head>
 <body>
-    <p>Redirecting to <a href="address_parser.html">Address Parser</a>...</p>
+    <p>Redirecting to <a href="index.html">Address Parser</a>...</p>
 </body>
 </html>
 EOF
@@ -47,8 +47,8 @@ fi
 
 # Validate the HTML file
 echo "🔍 Validating HTML file..."
-if ! grep -q "<!DOCTYPE html>" "$DEPLOY_DIR/address_parser.html"; then
-    echo "❌ Warning: address_parser.html doesn't appear to be valid HTML"
+if ! grep -q "<!DOCTYPE html>" "$DEPLOY_DIR/index.html"; then
+    echo "❌ Warning: index.html doesn't appear to be valid HTML"
 fi
 
 # Create deployment info
@@ -60,9 +60,8 @@ Deployment Time: $(date)
 Version: 1.0.0
 Platform: Ubuntu/Coolify
 Files Deployed:
-- address_parser.html
+- index.html
 - README.md
-- index.html (redirect)
 - package.json
 
 Total Size: $(du -sh "$DEPLOY_DIR" | cut -f1)
