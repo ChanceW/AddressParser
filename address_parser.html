@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Address Parser</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .controls {
+            padding: 20px 30px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .file-input {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .file-input input[type="file"] {
+            padding: 10px;
+            border: 2px dashed #4facfe;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(79, 172, 254, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .stats {
+            display: flex;
+            gap: 20px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            background: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+            font-size: 0.9rem;
+        }
+
+        .stat-item strong {
+            color: #4facfe;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .addresses-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .address-card {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .address-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .address-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .address-number {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .street-address {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 8px;
+            padding-right: 40px;
+        }
+
+        .city-state-zip {
+            font-size: 1rem;
+            color: #7f8c8d;
+            line-height: 1.4;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #7f8c8d;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4facfe;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #fcc;
+            margin: 20px 0;
+        }
+
+        .no-addresses {
+            text-align: center;
+            padding: 40px;
+            color: #7f8c8d;
+            font-size: 1.1rem;
+        }
+
+        @media (max-width: 768px) {
+            .addresses-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .file-input {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Address Parser</h1>
+            <p>Parse and display addresses from RTF files</p>
+        </div>
+
+        <div class="controls">
+            <div class="file-input">
+                <input type="file" id="rtfFile" accept=".rtf" />
+                <button class="btn" id="parseBtn" onclick="parseRTF()">Parse Addresses</button>
+                <button class="btn" id="testBtn" onclick="testRTF()" style="background: #28a745;">Test RTF</button>
+            </div>
+            <div class="stats" id="stats" style="display: none;">
+                <div class="stat-item">
+                    <strong id="totalAddresses">0</strong> Total Addresses
+                </div>
+                <div class="stat-item">
+                    <strong id="uniqueCities">0</strong> Unique Cities
+                </div>
+                <div class="stat-item">
+                    <strong id="uniqueStates">0</strong> Unique States
+                </div>
+            </div>
+        </div>
+
+        <div class="content">
+            <div id="loading" class="loading" style="display: none;">
+                <div class="spinner"></div>
+                <p>Parsing addresses...</p>
+            </div>
+            
+            <div id="error" class="error" style="display: none;"></div>
+            
+            <div id="noAddresses" class="no-addresses" style="display: none;">
+                <p>No addresses found. Please select an RTF file and click "Parse Addresses".</p>
+            </div>
+            
+            <div id="addressesContainer" class="addresses-grid"></div>
+        </div>
+    </div>
+
+    <script>
+        function parseRTF() {
+            const fileInput = document.getElementById('rtfFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showError('Please select an RTF file first.');
+                return;
+            }
+
+            showLoading();
+            hideError();
+            hideNoAddresses();
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const rtfContent = e.target.result;
+                    console.log('Raw RTF content length:', rtfContent.length); // Debug
+                    const addresses = extractAddressesFromRTF(rtfContent);
+                    displayAddresses(addresses);
+                    updateStats(addresses);
+                } catch (error) {
+                    showError('Error parsing RTF file: ' + error.message);
+                    console.error('Parsing error:', error); // Debug
+                }
+                hideLoading();
+            };
+
+            reader.onerror = function() {
+                showError('Error reading file.');
+                hideLoading();
+            };
+
+            reader.readAsText(file);
+        }
+
+        function extractAddressesFromRTF(rtfContent) {
+            console.log('Starting RTF parsing...');
+            
+            // Simple RTF cleaning - just remove RTF commands but keep content
+            let cleanedContent = rtfContent
+                .replace(/\\[a-z]+\d*\s?/g, ' ') // Remove RTF commands
+                .replace(/\\'/g, "'") // Handle escaped apostrophes
+                .replace(/\\"/g, '"') // Handle escaped quotes
+                .replace(/\\\s/g, ' ') // Handle escaped spaces
+                .replace(/\s+/g, ' ') // Normalize whitespace
+                .trim();
+
+            console.log('Cleaned content length:', cleanedContent.length);
+            console.log('First 1000 chars:', cleanedContent.substring(0, 1000));
+
+            // Extract all text content from braces
+            const textMatches = cleanedContent.match(/\{([^}]+)\}/g);
+            console.log('Text matches found:', textMatches ? textMatches.length : 0);
+            
+            if (textMatches) {
+                console.log('First 10 text matches:', textMatches.slice(0, 10));
+            }
+
+            const addresses = [];
+
+            // Process each text block
+            if (textMatches) {
+                for (let match of textMatches) {
+                    // Remove the braces
+                    let text = match.replace(/[{}]/g, '').trim();
+                    
+                    if (text.length > 10) { // Only process substantial text blocks
+                        console.log('Processing text block:', text);
+                        
+                        // Look for address patterns in this text block
+                        const addressMatch = text.match(/(\d+\s+[A-Za-z\s]+(?:Dr|Ln|Ct|Ave|St|Blvd|Way|Pl|Rd|Suite|Ste|Po Box|Parl|Park|Drive|Lane|Court|Street|Avenue|Boulevard|Point|Pointe))\s+([A-Za-z\s]+,\s*[A-Z]{2}\s+\d{5}(?:-\d{4})?)/gi);
+                        
+                        if (addressMatch) {
+                            for (let addr of addressMatch) {
+                                const parts = addr.match(/^(\d+\s+[A-Za-z\s]+(?:Dr|Ln|Ct|Ave|St|Blvd|Way|Pl|Rd|Suite|Ste|Po Box|Parl|Park|Drive|Lane|Court|Street|Avenue|Boulevard|Point|Pointe))\s+([A-Za-z\s]+,\s*[A-Z]{2}\s+\d{5}(?:-\d{4})?)/i);
+                                if (parts) {
+                                    const street = parts[1].trim();
+                                    const city = parts[2].trim();
+                                    
+                                    console.log('Found address:', street, '->', city);
+                                    addresses.push({
+                                        street: street,
+                                        city: city
+                                    });
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            console.log('Final addresses found:', addresses.length);
+            if (addresses.length > 0) {
+                console.log('Sample addresses:', addresses.slice(0, 3));
+            }
+            
+            return addresses;
+        }
+
+        function displayAddresses(addresses) {
+            const container = document.getElementById('addressesContainer');
+            
+            if (addresses.length === 0) {
+                showNoAddresses();
+                return;
+            }
+
+            container.innerHTML = addresses.map((address, index) => `
+                <div class="address-card">
+                    <div class="address-number">${index + 1}</div>
+                    <div class="street-address">${address.street}</div>
+                    <div class="city-state-zip">${address.city}</div>
+                </div>
+            `).join('');
+        }
+
+        function updateStats(addresses) {
+            const cities = new Set();
+            const states = new Set();
+
+            addresses.forEach(address => {
+                if (address.city) {
+                    const cityState = address.city.split(',');
+                    if (cityState.length >= 2) {
+                        cities.add(cityState[0].trim());
+                        const stateZip = cityState[1].trim().split(' ');
+                        if (stateZip.length >= 1) {
+                            states.add(stateZip[0]);
+                        }
+                    }
+                }
+            });
+
+            document.getElementById('totalAddresses').textContent = addresses.length;
+            document.getElementById('uniqueCities').textContent = cities.size;
+            document.getElementById('uniqueStates').textContent = states.size;
+            document.getElementById('stats').style.display = 'flex';
+        }
+
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        function hideError() {
+            document.getElementById('error').style.display = 'none';
+        }
+
+        function showNoAddresses() {
+            document.getElementById('noAddresses').style.display = 'block';
+        }
+
+        function hideNoAddresses() {
+            document.getElementById('noAddresses').style.display = 'none';
+        }
+
+        function testRTF() {
+            const fileInput = document.getElementById('rtfFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showError('Please select an RTF file first.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const rtfContent = e.target.result;
+                console.log('=== RAW RTF CONTENT ===');
+                console.log('File size:', rtfContent.length, 'characters');
+                console.log('First 2000 characters:');
+                console.log(rtfContent.substring(0, 2000));
+                console.log('=== END RAW CONTENT ===');
+                
+                // Also show what happens after basic cleaning
+                let cleaned = rtfContent
+                    .replace(/\\[a-z]+\d*\s?/g, ' ')
+                    .replace(/\\'/g, "'")
+                    .replace(/\\"/g, '"')
+                    .replace(/\\\s/g, ' ')
+                    .replace(/\s+/g, ' ')
+                    .trim();
+                
+                console.log('=== BASIC CLEANED CONTENT ===');
+                console.log('Cleaned length:', cleaned.length);
+                console.log('First 1000 characters:');
+                console.log(cleaned.substring(0, 1000));
+                console.log('=== END CLEANED CONTENT ===');
+                
+                alert('Check the browser console (F12) for RTF content analysis');
+            };
+            reader.readAsText(file);
+        }
+
+        // Auto-parse if the demo RTF file is available
+        window.addEventListener('load', function() {
+            // Show initial state - no addresses loaded
+            showNoAddresses();
+        });
+    </script>
+</body>
+</html> 
